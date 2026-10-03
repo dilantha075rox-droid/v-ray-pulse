@@ -1,7 +1,5 @@
 package com.example.ui
 
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -16,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -28,7 +25,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -55,12 +52,15 @@ import com.example.ui.theme.CyberSurfaceLight
 import com.example.ui.theme.CyberTextPrimary
 import com.example.ui.theme.CyberTextSecondary
 import com.example.ui.theme.CyberTextTertiary
+import com.example.util.DownloadState
 import com.example.util.UpdateCheckResult
 
 @Composable
 fun CustomRigScreen(
     updateStatus: UpdateCheckResult = UpdateCheckResult(),
+    downloadState: DownloadState = DownloadState.Idle,
     onCheckForUpdates: () -> Unit = {},
+    onDownloadAndInstall: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val scrollState = rememberScrollState()
@@ -144,10 +144,12 @@ fun CustomRigScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // BOTTOM SECTION: App Updates Card (Always placed at the bottom of Expert Panel)
+        // BOTTOM SECTION: App Updates Card (In-app direct download & install)
         AppUpdateSectionCard(
             updateStatus = updateStatus,
-            onCheckForUpdates = onCheckForUpdates
+            downloadState = downloadState,
+            onCheckForUpdates = onCheckForUpdates,
+            onDownloadAndInstall = onDownloadAndInstall
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -157,10 +159,10 @@ fun CustomRigScreen(
 @Composable
 fun AppUpdateSectionCard(
     updateStatus: UpdateCheckResult,
-    onCheckForUpdates: () -> Unit
+    downloadState: DownloadState,
+    onCheckForUpdates: () -> Unit,
+    onDownloadAndInstall: () -> Unit
 ) {
-    val context = LocalContext.current
-
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -204,7 +206,7 @@ fun AppUpdateSectionCard(
                         .padding(horizontal = 8.dp, vertical = 4.dp)
                 ) {
                     Text(
-                        text = "GITHUB SYNCED",
+                        text = "GITHUB IN-APP UPDATE",
                         fontSize = 9.sp,
                         fontWeight = FontWeight.Bold,
                         color = CyberEmerald,
@@ -246,7 +248,7 @@ fun AppUpdateSectionCard(
             }
 
             // Status notification box if checked
-            if (updateStatus.isUpToDate && !updateStatus.isChecking) {
+            if (updateStatus.isUpToDate && !updateStatus.isChecking && downloadState is DownloadState.Idle) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -266,14 +268,14 @@ fun AppUpdateSectionCard(
                             modifier = Modifier.size(16.dp)
                         )
                         Text(
-                            text = "V-RAY PULSE is fully updated and synchronized with GitHub repository.",
+                            text = "V-RAY PULSE is fully updated to the latest version.",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Medium,
                             color = CyberTextPrimary
                         )
                     }
                 }
-            } else if (updateStatus.updateAvailable) {
+            } else if (updateStatus.updateAvailable && downloadState is DownloadState.Idle) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -300,18 +302,52 @@ fun AppUpdateSectionCard(
                 }
             }
 
-            // Check for Updates Button
+            // Real-time In-App Download Progress Indicator
+            if (downloadState is DownloadState.Downloading) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "Downloading APK update in-app...",
+                            fontSize = 11.sp,
+                            color = CyberCyan,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "${downloadState.progressPercent}%",
+                            fontSize = 11.sp,
+                            color = CyberCyan,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = FontFamily.Monospace
+                        )
+                    }
+                    LinearProgressIndicator(
+                        progress = { downloadState.progressPercent / 100f },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(6.dp)
+                            .clip(RoundedCornerShape(3.dp)),
+                        color = CyberCyan,
+                        trackColor = CyberSurfaceLight
+                    )
+                }
+            }
+
+            // Action Button: CHECK FOR UPDATES or IN-APP DOWNLOAD & INSTALL
             Button(
                 onClick = {
                     if (updateStatus.updateAvailable) {
-                        try {
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(updateStatus.downloadUrl))
-                            context.startActivity(intent)
-                        } catch (_: Exception) {}
+                        onDownloadAndInstall()
                     } else {
                         onCheckForUpdates()
                     }
                 },
+                enabled = downloadState !is DownloadState.Downloading,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(46.dp),
@@ -337,15 +373,21 @@ fun AppUpdateSectionCard(
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold
                         )
+                    } else if (downloadState is DownloadState.Downloading) {
+                        Text(
+                            text = "DOWNLOADING UPDATE...",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
                     } else if (updateStatus.updateAvailable) {
                         Icon(
                             imageVector = Icons.Default.CloudDownload,
-                            contentDescription = "Download",
+                            contentDescription = "Download & Install",
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "DOWNLOAD NEW UPDATE",
+                            text = "DOWNLOAD & INSTALL UPDATE",
                             fontSize = 12.sp,
                             fontWeight = FontWeight.ExtraBold
                         )

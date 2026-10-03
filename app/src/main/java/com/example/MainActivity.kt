@@ -83,7 +83,8 @@ class MainActivity : ComponentActivity() {
                         onSelectNode = { node -> viewModel.selectNode(node) },
                         onDeleteNode = { node -> viewModel.deleteNode(node) },
                         onPingAllNodes = { viewModel.pingAllNodes() },
-                        onCheckForUpdates = { viewModel.checkForUpdates() }
+                        onCheckForUpdates = { viewModel.checkForUpdates() },
+                        onDownloadAndInstall = { viewModel.downloadAndInstallUpdate(this@MainActivity) }
                     )
 
                     if (uiState.isImportDialogOpen) {

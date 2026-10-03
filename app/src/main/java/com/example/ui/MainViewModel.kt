@@ -18,8 +18,10 @@ import com.example.service.VpnStateManager
 import com.example.storage.VlessRepository
 import com.example.telemetry.TelemetryManager
 import com.example.util.AppUpdateChecker
+import com.example.util.AppUpdateDownloader
 import com.example.util.DeviceInfo
 import com.example.util.DeviceInfoHelper
+import com.example.util.DownloadState
 import com.example.util.UpdateCheckResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -43,7 +45,8 @@ data class MainUiState(
     val allNodes: List<VlessConfig> = emptyList(),
     val nodePings: Map<String, Long> = emptyMap(),
     val isPinging: Boolean = false,
-    val updateStatus: UpdateCheckResult = UpdateCheckResult(latestVersion = "1.0")
+    val updateStatus: UpdateCheckResult = UpdateCheckResult(latestVersion = "1.0"),
+    val downloadState: DownloadState = DownloadState.Idle
 )
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
@@ -93,7 +96,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _activeTab,
         _allNodes,
         _nodePings,
-        _updateStatus
+        _updateStatus,
+        AppUpdateDownloader.downloadState
     ) { args ->
         @Suppress("UNCHECKED_CAST")
         val vpnState = args[0] as VpnState
@@ -111,6 +115,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         @Suppress("UNCHECKED_CAST")
         val nodePings = args[9] as Map<String, Long>
         val updateStatus = args[10] as UpdateCheckResult
+        val downloadState = args[11] as DownloadState
 
         val server = activeConfig ?: localConfig
         val combinedError = when {
@@ -128,7 +133,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             activeTab = activeTab,
             allNodes = allNodes,
             nodePings = nodePings,
-            updateStatus = updateStatus
+            updateStatus = updateStatus,
+            downloadState = downloadState
         )
     }.stateIn(
         scope = viewModelScope,
@@ -155,6 +161,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             _updateStatus.value = _updateStatus.value.copy(isChecking = true, errorMessage = null)
             val result = AppUpdateChecker.checkForUpdates("1.0")
             _updateStatus.value = result
+        }
+    }
+
+    fun downloadAndInstallUpdate(context: Context) {
+        val url = uiState.value.updateStatus.downloadUrl
+        viewModelScope.launch {
+            AppUpdateDownloader.downloadAndInstallApk(context, url)
         }
     }
 

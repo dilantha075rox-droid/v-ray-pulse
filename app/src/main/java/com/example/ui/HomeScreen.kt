@@ -95,7 +95,8 @@ fun HomeScreen(
     onSelectNode: (VlessConfig) -> Unit,
     onDeleteNode: (VlessConfig) -> Unit,
     onPingAllNodes: () -> Unit,
-    onCheckForUpdates: () -> Unit
+    onCheckForUpdates: () -> Unit,
+    onDownloadAndInstall: () -> Unit
 ) {
     val scrollState = rememberScrollState()
     val insets = WindowInsets.systemBars.asPaddingValues()
@@ -143,7 +144,9 @@ fun HomeScreen(
                     DashboardTab.CUSTOM_RIG -> {
                         CustomRigScreen(
                             updateStatus = uiState.updateStatus,
-                            onCheckForUpdates = onCheckForUpdates
+                            downloadState = uiState.downloadState,
+                            onCheckForUpdates = onCheckForUpdates,
+                            onDownloadAndInstall = onDownloadAndInstall
                         )
                     }
                 }
