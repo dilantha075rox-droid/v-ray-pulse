@@ -13,7 +13,7 @@ data class UpdateCheckResult(
     val isUpToDate: Boolean = false,
     val updateAvailable: Boolean = false,
     val latestVersion: String = "1.0",
-    val downloadUrl: String = "https://github.com",
+    val downloadUrl: String = "https://github.com/dilantha075rox-droid/v-ray-pulse/releases",
     val releaseNotes: String = "",
     val lastCheckedText: String = "",
     val errorMessage: String? = null
@@ -21,8 +21,8 @@ data class UpdateCheckResult(
 
 object AppUpdateChecker {
 
-    // Set your GitHub repository owner and repo name here
-    var GITHUB_OWNER = "dilanthats"
+    // Configured GitHub owner and repo name
+    var GITHUB_OWNER = "dilantha075rox-droid"
     var GITHUB_REPO = "v-ray-pulse"
 
     suspend fun checkForUpdates(currentVersion: String): UpdateCheckResult = withContext(Dispatchers.IO) {
