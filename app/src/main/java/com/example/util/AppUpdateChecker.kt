@@ -21,7 +21,6 @@ data class UpdateCheckResult(
 
 object AppUpdateChecker {
 
-    // Configured GitHub owner and repo name
     var GITHUB_OWNER = "dilantha075rox-droid"
     var GITHUB_REPO = "v-ray-pulse"
 
@@ -33,30 +32,46 @@ object AppUpdateChecker {
         try {
             val url = URL(apiUrl)
             val conn = url.openConnection() as HttpURLConnection
-            conn.connectTimeout = 4000
-            conn.readTimeout = 4000
+            conn.connectTimeout = 5000
+            conn.readTimeout = 5000
             conn.requestMethod = "GET"
             conn.setRequestProperty("User-Agent", "VRayPulse-Android")
 
-            if (conn.responseCode == 200) {
+            val responseCode = conn.responseCode
+
+            if (responseCode == HttpURLConnection.HTTP_OK) {
                 val json = conn.inputStream.bufferedReader().use { it.readText() }
-                val tag = Regex("\"tag_name\"\\s*:\\s*\"([^\"]+)\"").find(json)?.groupValues?.get(1) ?: "v1.0"
-                val body = Regex("\"body\"\\s*:\\s*\"([^\"]+)\"").find(json)?.groupValues?.get(1) ?: "New release available with updates."
-                val htmlUrl = Regex("\"html_url\"\\s*:\\s*\"([^\"]+)\"").find(json)?.groupValues?.get(1) ?: repoWebUrl
+                
+                // Extract tag_name, body, assets browser_download_url
+                val rawTag = Regex("\"tag_name\"\\s*:\\s*\"([^\"]+)\"").find(json)?.groupValues?.get(1) ?: "1.0"
+                val body = Regex("\"body\"\\s*:\\s*\"([^\"]+)\"").find(json)?.groupValues?.get(1) ?: "Latest release update"
+                val apkDownloadUrl = Regex("\"browser_download_url\"\\s*:\\s*\"([^\"]+\\.apk)\"").find(json)?.groupValues?.get(1)
+                    ?: Regex("\"html_url\"\\s*:\\s*\"([^\"]+)\"").find(json)?.groupValues?.get(1)
+                    ?: repoWebUrl
 
-                val cleanTag = tag.replace("v", "").trim()
-                val cleanCurrent = currentVersion.replace("v", "").trim()
+                // Extract numeric version numbers for comparison (e.g. "V1.1 (build demo)" -> "1.1")
+                val latestNum = Regex("(\\d+(\\.\\d+)+)").find(rawTag)?.groupValues?.get(1) ?: "1.0"
+                val currentNum = Regex("(\\d+(\\.\\d+)+)").find(currentVersion)?.groupValues?.get(1) ?: "1.0"
 
-                val isNewer = cleanTag != cleanCurrent && cleanTag > cleanCurrent
+                val isNewer = compareVersions(latestNum, currentNum) > 0
 
                 UpdateCheckResult(
                     isChecking = false,
                     isUpToDate = !isNewer,
                     updateAvailable = isNewer,
-                    latestVersion = if (tag.startsWith("v")) tag else "v$tag",
-                    downloadUrl = htmlUrl,
-                    releaseNotes = body.take(100),
+                    latestVersion = rawTag,
+                    downloadUrl = apkDownloadUrl,
+                    releaseNotes = body.take(120),
                     lastCheckedText = "Checked at $timeStr"
+                )
+            } else if (responseCode == HttpURLConnection.HTTP_NOT_FOUND) {
+                // 404 happens when repository is set to Private on GitHub
+                UpdateCheckResult(
+                    isChecking = false,
+                    isUpToDate = false,
+                    latestVersion = "v$currentVersion",
+                    downloadUrl = repoWebUrl,
+                    lastCheckedText = "Checked at $timeStr (Repo is Private on GitHub)"
                 )
             } else {
                 UpdateCheckResult(
@@ -64,7 +79,7 @@ object AppUpdateChecker {
                     isUpToDate = true,
                     latestVersion = "v$currentVersion",
                     downloadUrl = repoWebUrl,
-                    lastCheckedText = "Checked at $timeStr (Up to date)"
+                    lastCheckedText = "Checked at $timeStr (Code $responseCode)"
                 )
             }
         } catch (e: Exception) {
@@ -73,8 +88,21 @@ object AppUpdateChecker {
                 isUpToDate = true,
                 latestVersion = "v$currentVersion",
                 downloadUrl = repoWebUrl,
-                lastCheckedText = "Checked at $timeStr (Up to date)"
+                lastCheckedText = "Checked at $timeStr"
             )
         }
+    }
+
+    private fun compareVersions(v1: String, v2: String): Int {
+        val parts1 = v1.split(".").mapNotNull { it.toIntOrNull() }
+        val parts2 = v2.split(".").mapNotNull { it.toIntOrNull() }
+        val maxLen = maxOf(parts1.size, parts2.size)
+
+        for (i in 0 until maxLen) {
+            val p1 = parts1.getOrElse(i) { 0 }
+            val p2 = parts2.getOrElse(i) { 0 }
+            if (p1 != p2) return p1.compareTo(p2)
+        }
+        return 0
     }
 }
