@@ -12,6 +12,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.model.TelemetryData
 import com.example.model.VlessConfig
 import com.example.parser.VlessParser
+import com.example.radar.CellularRadarData
+import com.example.radar.CellularRadarManager
 import com.example.service.V2rayVpnService
 import com.example.service.VpnState
 import com.example.service.VpnStateManager
@@ -51,7 +53,8 @@ data class MainUiState(
     val nodePings: Map<String, Long> = emptyMap(),
     val isPinging: Boolean = false,
     val updateStatus: UpdateCheckResult = UpdateCheckResult(latestVersion = "1.0"),
-    val downloadState: DownloadState = DownloadState.Idle
+    val downloadState: DownloadState = DownloadState.Idle,
+    val radarData: CellularRadarData = CellularRadarData()
 )
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
@@ -74,6 +77,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     init {
         // Fetch Device info
         _deviceInfo.value = DeviceInfoHelper.getDeviceInfo(application)
+
+        // Start Cellular RF Radar
+        CellularRadarManager.startRadar(application)
 
         // Collect saved VLESS config
         viewModelScope.launch {
@@ -108,7 +114,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _allNodes,
         _nodePings,
         _updateStatus,
-        AppUpdateDownloader.downloadState
+        AppUpdateDownloader.downloadState,
+        CellularRadarManager.radarData
     ) { args ->
         @Suppress("UNCHECKED_CAST")
         val vpnState = args[0] as VpnState
@@ -130,6 +137,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val nodePings = args[12] as Map<String, Long>
         val updateStatus = args[13] as UpdateCheckResult
         val downloadState = args[14] as DownloadState
+        val radarData = args[15] as CellularRadarData
 
         val server = activeConfig ?: localConfig
         val combinedError = when {
@@ -151,7 +159,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             allNodes = allNodes,
             nodePings = nodePings,
             updateStatus = updateStatus,
-            downloadState = downloadState
+            downloadState = downloadState,
+            radarData = radarData
         )
     }.stateIn(
         scope = viewModelScope,
@@ -171,6 +180,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun closeImportDialog() {
         _isImportDialogOpen.value = false
+    }
+
+    fun setRadarMasterToggle(enabled: Boolean) {
+        CellularRadarManager.setMasterToggle(enabled)
     }
 
     fun openExpertPanel() {

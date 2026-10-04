@@ -101,6 +101,7 @@ fun HomeScreen(
     onPingAllNodes: () -> Unit,
     onCheckForUpdates: () -> Unit,
     onDownloadAndInstall: () -> Unit,
+    onRadarMasterToggle: (Boolean) -> Unit,
     onExpertClick: () -> Unit,
     onCloseExpertPanel: () -> Unit
 ) {
@@ -154,10 +155,12 @@ fun HomeScreen(
                     }
                     DashboardTab.EXPERT -> {
                         ExpertScreen(
+                            radarData = uiState.radarData,
                             updateStatus = uiState.updateStatus,
                             downloadState = uiState.downloadState,
                             onCheckForUpdates = onCheckForUpdates,
-                            onDownloadAndInstall = onDownloadAndInstall
+                            onDownloadAndInstall = onDownloadAndInstall,
+                            onRadarMasterToggle = onRadarMasterToggle
                         )
                     }
                 }

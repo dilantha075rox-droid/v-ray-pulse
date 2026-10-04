@@ -97,6 +97,7 @@ class MainActivity : ComponentActivity() {
                         onPingAllNodes = { viewModel.pingAllNodes() },
                         onCheckForUpdates = { viewModel.checkForUpdates() },
                         onDownloadAndInstall = { viewModel.downloadAndInstallUpdate(this@MainActivity) },
+                        onRadarMasterToggle = { enabled -> viewModel.setRadarMasterToggle(enabled) },
                         onExpertClick = { viewModel.selectTab(com.example.ui.DashboardTab.EXPERT) },
                         onCloseExpertPanel = { viewModel.closeExpertPanel() }
                     )

@@ -45,6 +45,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.radar.CellularRadarData
 import com.example.ui.theme.CyberBgDark
 import com.example.ui.theme.CyberBgDeep
 import com.example.ui.theme.CyberCardBorder
@@ -59,10 +60,12 @@ import com.example.util.UpdateCheckResult
 
 @Composable
 fun ExpertScreen(
+    radarData: CellularRadarData,
     updateStatus: UpdateCheckResult,
     downloadState: DownloadState,
     onCheckForUpdates: () -> Unit,
     onDownloadAndInstall: () -> Unit,
+    onRadarMasterToggle: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val scrollState = rememberScrollState()
@@ -79,14 +82,14 @@ fun ExpertScreen(
         // Top Header
         Column {
             Text(
-                text = "EXPERT",
+                text = "EXPERT PANEL",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = CyberTextPrimary,
                 letterSpacing = 1.5.sp
             )
             Text(
-                text = "Advanced V-RAY PULSE controls",
+                text = "Advanced V-RAY PULSE controls & RF telemetry",
                 fontSize = 11.5.sp,
                 color = CyberTextSecondary
             )
@@ -174,9 +177,18 @@ fun ExpertScreen(
             }
         }
 
-        // Future expert cards will be added here above Updates Card
+        // SECTION 2: ISP & CELLULAR RF RADAR (Matches Screenshot 1)
+        CellularRadarSectionCard(
+            radarData = radarData,
+            onMasterToggleChange = onRadarMasterToggle
+        )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        // SECTION 3: ISP PORT ACCESSIBILITY (Matches Screenshot 2)
+        PortAccessibilityCard(
+            radarData = radarData
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
 
         // BOTTOM CARD: SOFTWARE & APP UPDATES (Anchored at the very bottom)
         AppUpdateSectionCard(
