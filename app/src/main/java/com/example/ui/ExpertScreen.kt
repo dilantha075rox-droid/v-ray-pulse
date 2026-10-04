@@ -177,15 +177,10 @@ fun ExpertScreen(
             }
         }
 
-        // SECTION 2: ISP & CELLULAR RF RADAR (Matches Screenshot 1)
+        // SECTION 2: ISP & CELLULAR RF RADAR (Includes embedded ISP Port Accessibility)
         CellularRadarSectionCard(
             radarData = radarData,
             onMasterToggleChange = onRadarMasterToggle
-        )
-
-        // SECTION 3: ISP PORT ACCESSIBILITY (Matches Screenshot 2)
-        PortAccessibilityCard(
-            radarData = radarData
         )
 
         Spacer(modifier = Modifier.height(12.dp))

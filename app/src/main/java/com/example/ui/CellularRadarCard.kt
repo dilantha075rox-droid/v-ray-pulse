@@ -12,14 +12,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CellTower
 import androidx.compose.material.icons.filled.CompassCalibration
-import androidx.compose.material.icons.filled.NetworkCheck
 import androidx.compose.material.icons.filled.Radar
-import androidx.compose.material.icons.filled.Router
 import androidx.compose.material.icons.filled.SignalCellularAlt
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Switch
@@ -124,9 +121,9 @@ fun CellularRadarSectionCard(
             AnimatedVisibility(visible = radarData.isMasterOn) {
                 Column(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // MOBILE OPERATOR / ISP Box (Matches Screenshot 1: Dialog, -82 dBm EXCELLENT (88%))
+                    // MOBILE OPERATOR / ISP Box
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -199,7 +196,7 @@ fun CellularRadarSectionCard(
                         }
                     }
 
-                    // SERVING CELL (CONNECTED BAND) Box (Matches Screenshot 1: Band 3 (1800 MHz FDD))
+                    // SERVING CELL (CONNECTED BAND) Box
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -245,7 +242,7 @@ fun CellularRadarSectionCard(
                             )
 
                             Text(
-                                text = "EARFCN: ${radarData.earfcn}  •  PCI: ${radarData.pci}",
+                                text = "EARFCN: ${radarData.earfcn}  •  PCI: ${radarData.pci}  •  TAC: ${radarData.tac}",
                                 fontSize = 10.5.sp,
                                 color = CyberTextSecondary,
                                 fontFamily = FontFamily.Monospace
@@ -253,26 +250,26 @@ fun CellularRadarSectionCard(
                         }
                     }
 
-                    // RF Metrics Rows (Matches Screenshot 1)
+                    // RF Metrics Rows (Matches NetMonster Net RF Parameters)
                     RadarMetricRow(
                         icon = Icons.Default.CompassCalibration,
                         label = "TOWER DISTANCE",
-                        value = "~${radarData.towerDistanceMeters} meters (${String.format(java.util.Locale.US, "%.2f", radarData.towerDistanceMeters / 1000.0)} km) (TA: ${radarData.timingAdvance})"
+                        value = "~${radarData.towerDistanceMeters} meters (${String.format(java.util.Locale.US, "%.1f", radarData.towerDistanceMeters / 1000.0)} km) (TA: ${radarData.timingAdvance})"
                     )
 
                     RadarMetricRow(
                         icon = Icons.Default.CellTower,
                         label = "BASE STATION IDENTITY",
-                        value = "eNB: ${radarData.enbId}  •  CID: ${radarData.cellId}"
+                        value = "eNB: ${radarData.enbId}  •  CID: ${radarData.cellId}  •  CI: ${radarData.ci}"
                     )
 
                     RadarMetricRow(
                         icon = Icons.Default.SignalCellularAlt,
                         label = "RF SIGNAL METRICS",
-                        value = "RSRP: ${radarData.rsrp} dBm  •  RSRQ: ${radarData.rsrq} dB  •  SINR: ${radarData.sinr} dB"
+                        value = "RSRP: ${radarData.rsrp} dBm  •  RSRQ: ${radarData.rsrq} dB  •  RSSI: ${radarData.rssi} dBm  •  SNR: ${radarData.sinr} dB"
                     )
 
-                    // AVAILABLE BANDS (NEIGHBOR CELLS & CA) (Matches Screenshot 1)
+                    // AVAILABLE BANDS (NEIGHBOR CELLS & CA)
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text(
                             text = "WHICH BANDS AVAILABLE (NEIGHBOR CELLS & CA)",
@@ -329,6 +326,13 @@ fun CellularRadarSectionCard(
                             )
                         }
                     }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    // Embedded ISP PORT ACCESSIBILITY Inside RF Radar Section Card
+                    PortAccessibilityCard(
+                        radarData = radarData
+                    )
                 }
             }
         }
@@ -343,14 +347,14 @@ fun PortAccessibilityCard(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
-            .background(CyberBgDeep)
-            .border(1.dp, CyberCyan.copy(alpha = 0.5f), RoundedCornerShape(18.dp))
-            .padding(14.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(Color.Black.copy(alpha = 0.35f))
+            .border(1.dp, CyberCardBorder, RoundedCornerShape(14.dp))
+            .padding(12.dp)
     ) {
         Column(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             // Header Row (Matches Screenshot 2: ISP PORT ACCESSIBILITY, TLS 1.3 READY)
             Row(
@@ -360,17 +364,17 @@ fun PortAccessibilityCard(
             ) {
                 Text(
                     text = "ISP PORT ACCESSIBILITY",
-                    fontSize = 12.sp,
+                    fontSize = 11.5.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = CyberCyan,
-                    letterSpacing = 1.2.sp
+                    letterSpacing = 1.1.sp
                 )
 
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(50))
                         .background(CyberSurfaceLight)
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                        .padding(horizontal = 8.dp, vertical = 3.dp)
                 ) {
                     Text(
                         text = "TLS 1.3 READY",
@@ -387,20 +391,20 @@ fun PortAccessibilityCard(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 3.dp),
+                        .padding(vertical = 2.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
                         text = port.name,
-                        fontSize = 11.5.sp,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Medium,
                         color = CyberTextPrimary
                     )
 
                     Text(
                         text = port.statusText,
-                        fontSize = 10.5.sp,
+                        fontSize = 10.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = if (port.isOpen) CyberEmerald else Color.Red,
                         letterSpacing = 0.5.sp
@@ -436,7 +440,7 @@ fun RadarMetricRow(
             )
             Text(
                 text = label,
-                fontSize = 10.sp,
+                fontSize = 9.5.sp,
                 fontWeight = FontWeight.Bold,
                 color = CyberTextSecondary,
                 letterSpacing = 0.5.sp
@@ -445,7 +449,7 @@ fun RadarMetricRow(
 
         Text(
             text = value,
-            fontSize = 11.sp,
+            fontSize = 10.5.sp,
             fontWeight = FontWeight.Bold,
             color = CyberTextPrimary,
             fontFamily = FontFamily.Monospace

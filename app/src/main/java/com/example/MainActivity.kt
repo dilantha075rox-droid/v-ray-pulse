@@ -57,20 +57,43 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                // Notification permission launcher for Android 13+
-                val notificationPermissionLauncher = rememberLauncherForActivityResult(
-                    contract = ActivityResultContracts.RequestPermission()
-                ) { /* Foreground service works either way, notification visibility is system-managed */ }
+                // Cellular RF & Location permission launcher
+                val cellularPermissionsLauncher = rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.RequestMultiplePermissions()
+                ) { _ ->
+                    viewModel.refreshRadar(this@MainActivity)
+                }
 
                 LaunchedEffect(Unit) {
+                    val permissions = mutableListOf<String>()
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                         if (ContextCompat.checkSelfPermission(
                                 this@MainActivity,
                                 Manifest.permission.POST_NOTIFICATIONS
                             ) != PackageManager.PERMISSION_GRANTED
                         ) {
-                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            permissions.add(Manifest.permission.POST_NOTIFICATIONS)
                         }
+                    }
+                    if (ContextCompat.checkSelfPermission(
+                            this@MainActivity,
+                            Manifest.permission.ACCESS_FINE_LOCATION
+                        ) != PackageManager.PERMISSION_GRANTED
+                    ) {
+                        permissions.add(Manifest.permission.ACCESS_FINE_LOCATION)
+                    }
+                    if (ContextCompat.checkSelfPermission(
+                            this@MainActivity,
+                            Manifest.permission.READ_PHONE_STATE
+                        ) != PackageManager.PERMISSION_GRANTED
+                    ) {
+                        permissions.add(Manifest.permission.READ_PHONE_STATE)
+                    }
+
+                    if (permissions.isNotEmpty()) {
+                        cellularPermissionsLauncher.launch(permissions.toTypedArray())
+                    } else {
+                        viewModel.refreshRadar(this@MainActivity)
                     }
                 }
 
@@ -97,7 +120,7 @@ class MainActivity : ComponentActivity() {
                         onPingAllNodes = { viewModel.pingAllNodes() },
                         onCheckForUpdates = { viewModel.checkForUpdates() },
                         onDownloadAndInstall = { viewModel.downloadAndInstallUpdate(this@MainActivity) },
-                        onRadarMasterToggle = { enabled -> viewModel.setRadarMasterToggle(enabled) },
+                        onRadarMasterToggle = { enabled -> viewModel.setRadarMasterToggle(this@MainActivity, enabled) },
                         onExpertClick = { viewModel.selectTab(com.example.ui.DashboardTab.EXPERT) },
                         onCloseExpertPanel = { viewModel.closeExpertPanel() }
                     )

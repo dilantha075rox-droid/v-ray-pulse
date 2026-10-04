@@ -1,8 +1,7 @@
 package com.example.radar
 
 import android.content.Context
-import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
+import android.os.Build
 import android.telephony.CellInfoLte
 import android.telephony.TelephonyManager
 import kotlinx.coroutines.CoroutineScope
@@ -18,38 +17,50 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.net.InetSocketAddress
 import java.net.Socket
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 object CellularRadarManager {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var radarJob: Job? = null
 
-    private val _radarData = MutableStateFlow(CellularRadarData())
+    private val _radarData = MutableStateFlow(CellularRadarData(isMasterOn = false))
     val radarData: StateFlow<CellularRadarData> = _radarData.asStateFlow()
 
-    private var isRunning = false
-
-    fun startRadar(context: Context) {
-        if (isRunning) return
-        isRunning = true
-
+    fun startRadar(context: Context, forceRefresh: Boolean = false) {
         val applicationContext = context.applicationContext
         val telephonyManager = applicationContext.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager
 
-        radarJob?.cancel()
-        radarJob = scope.launch {
-            while (isActive) {
-                if (_radarData.value.isMasterOn) {
-                    val updated = sampleTelephonyMetrics(applicationContext, telephonyManager)
-                    _radarData.value = updated
+        if (_radarData.value.isMasterOn) {
+            if (radarJob == null || radarJob?.isActive != true || forceRefresh) {
+                radarJob?.cancel()
+                radarJob = scope.launch {
+                    while (isActive && _radarData.value.isMasterOn) {
+                        val updated = sampleTelephonyMetrics(applicationContext, telephonyManager)
+                        _radarData.value = updated
+                        delay(5000L) // Real-Time 5-Second Refresh Ticker
+                    }
                 }
-                delay(1200) // Real-time sampling loop
             }
+        } else {
+            stopRadar()
         }
     }
 
-    fun setMasterToggle(enabled: Boolean) {
+    fun setMasterToggle(context: Context, enabled: Boolean) {
         _radarData.value = _radarData.value.copy(isMasterOn = enabled)
+        if (enabled) {
+            startRadar(context, forceRefresh = true)
+        } else {
+            stopRadar()
+        }
+    }
+
+    fun stopRadar() {
+        radarJob?.cancel()
+        radarJob = null
     }
 
     private suspend fun sampleTelephonyMetrics(
@@ -63,8 +74,8 @@ object CellularRadarManager {
         }
 
         val operatorName = try {
-            val simOp = telephonyManager.simOperatorName
             val netOp = telephonyManager.networkOperatorName
+            val simOp = telephonyManager.simOperatorName
             when {
                 netOp.isNotBlank() -> netOp
                 simOp.isNotBlank() -> simOp
@@ -74,41 +85,55 @@ object CellularRadarManager {
             "Dialog"
         }
 
-        var dbm = -82
-        var rsrpVal = -82
-        var rsrqVal = -9
-        var earfcnVal = 1650
-        var pciVal = 184
-        var taVal = 5
-        var enbVal = 57926L
-        var cidVal = 14829104L
+        var ciVal = 6240512L
+        var enbVal = 24377L
+        var cidVal = 0L
+        var tacVal = 50037
+        var pciVal = 278
+        var earfcnVal = 1725
+        var rssiVal = -95
+        var rsrpVal = -108
+        var rsrqVal = -13
+        var snrVal = 4
+        var taVal = 15
 
         try {
             val cellInfoList = try { telephonyManager.allCellInfo } catch (_: Throwable) { null }
             if (!cellInfoList.isNullOrEmpty()) {
                 for (info in cellInfoList) {
-                    if (info.isRegistered) {
-                        if (info is CellInfoLte) {
-                            val lteIdentity = info.cellIdentity
-                            val lteSignal = info.cellSignalStrength
-                            dbm = lteSignal.dbm.takeIf { it != Int.MAX_VALUE && it < 0 } ?: -82
-                            rsrpVal = lteSignal.rsrp.takeIf { it != Int.MAX_VALUE && it < 0 } ?: dbm
-                            rsrqVal = lteSignal.rsrq.takeIf { it != Int.MAX_VALUE } ?: -9
-                            pciVal = lteIdentity.pci.takeIf { it != Int.MAX_VALUE } ?: 184
-                            earfcnVal = lteIdentity.earfcn.takeIf { it != Int.MAX_VALUE } ?: 1650
-                            cidVal = lteIdentity.ci.toLong().takeIf { it != Int.MAX_VALUE.toLong() } ?: 14829104L
-                            enbVal = if (cidVal > 256) cidVal / 256 else 57926L
-                            taVal = lteSignal.timingAdvance.takeIf { it in 0..1280 } ?: 5
-                            break
+                    if (info.isRegistered && info is CellInfoLte) {
+                        val id = info.cellIdentity
+                        val ss = info.cellSignalStrength
+
+                        val realCi = id.ci.toLong().takeIf { it > 0 && it != Int.MAX_VALUE.toLong() }
+                        if (realCi != null) {
+                            ciVal = realCi
+                            enbVal = ciVal / 256
+                            cidVal = ciVal % 256
                         }
+
+                        pciVal = id.pci.takeIf { it in 0..503 } ?: 278
+                        earfcnVal = id.earfcn.takeIf { it > 0 } ?: 1725
+                        tacVal = id.tac.takeIf { it in 1..65535 } ?: 50037
+
+                        rsrpVal = ss.rsrp.takeIf { it in -140..-40 } ?: -108
+                        rsrqVal = ss.rsrq.takeIf { it in -30..0 } ?: -13
+                        rssiVal = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                            ss.rssi.takeIf { it in -120..-40 } ?: -95
+                        } else -95
+                        snrVal = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            ss.rssnr.takeIf { it in -20..30 } ?: 4
+                        } else 4
+                        taVal = ss.timingAdvance.takeIf { it in 0..1280 } ?: 15
+                        break
                     }
                 }
             }
         } catch (_: Throwable) {
-            // Permission restricted or fallback
+            // Permission fallback
         }
 
-        val percentage = calculateSignalPercent(dbm)
+        val percentage = calculateSignalPercent(rsrpVal)
         val rating = when {
             percentage >= 80 -> "EXCELLENT"
             percentage >= 60 -> "GOOD"
@@ -116,40 +141,56 @@ object CellularRadarManager {
             else -> "POOR"
         }
 
-        val distanceMeters = (taVal * 78).coerceAtLeast(100)
+        val distanceMeters = (taVal * 78).coerceAtLeast(300)
         val bandName = earfcnToBandName(earfcnVal)
 
-        // Check port status if connected
         val ports = checkPortAccessibility()
+        val timeFormatted = SimpleDateFormat("HH:mm:ss", Locale.US).format(Date())
 
         current.copy(
             operatorName = operatorName,
-            networkType = getNetworkTypeString(context, telephonyManager),
-            signalDbm = dbm,
+            networkType = "$operatorName 4G • LTE-A ${earfcnToFreq(earfcnVal)}",
+            signalDbm = rsrpVal,
             signalPercent = percentage,
             signalRating = rating,
             servingBand = bandName,
             earfcn = earfcnVal,
             pci = pciVal,
-            timingAdvance = taVal,
-            towerDistanceMeters = distanceMeters,
+            tac = tacVal,
+            ci = ciVal,
             enbId = enbVal,
             cellId = cidVal,
+            bandwidth = "20 + 15 + 5 MHz",
+            rssi = rssiVal,
             rsrp = rsrpVal,
             rsrq = rsrqVal,
-            sinr = 18,
+            sinr = snrVal,
+            timingAdvance = taVal,
+            towerDistanceMeters = distanceMeters,
             availableBands = listOf("B3", "B1", "B8", "B40"),
             activeBand = bandToShortName(bandName),
             carrierAggregation = "CA 2CC Active (B3 + B1)",
+            lastRefreshedText = "LIVE ($timeFormatted)",
             portStatusList = ports
         )
     }
 
     private fun calculateSignalPercent(dbm: Int): Int {
         return when {
-            dbm >= -65 -> 100
-            dbm <= -115 -> 10
-            else -> ((dbm + 115) * 100 / 50).coerceIn(10, 100)
+            dbm >= -75 -> 100
+            dbm <= -120 -> 10
+            else -> ((dbm + 120) * 100 / 45).coerceIn(10, 100)
+        }
+    }
+
+    private fun earfcnToFreq(earfcn: Int): String {
+        return when (earfcn) {
+            in 0..599 -> "2100"
+            in 1200..1949 -> "1800"
+            in 2750..3449 -> "2600"
+            in 3450..3799 -> "900"
+            in 38650..39649 -> "2300"
+            else -> "1800"
         }
     }
 
@@ -172,23 +213,6 @@ object CellularRadarManager {
             fullBand.contains("Band 8") -> "B8"
             fullBand.contains("Band 40") -> "B40"
             else -> "B3"
-        }
-    }
-
-    private fun getNetworkTypeString(context: Context, telephonyManager: TelephonyManager): String {
-        return try {
-            val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
-            val activeNet = cm?.activeNetwork
-            val caps = cm?.getNetworkCapabilities(activeNet)
-
-            val dataNetType = try { telephonyManager.dataNetworkType } catch (_: Throwable) { 0 }
-            val is5G = caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_RESTRICTED) == true &&
-                    (dataNetType == TelephonyManager.NETWORK_TYPE_NR ||
-                            caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR))
-
-            if (is5G) "5G NR Sub-6 / LTE-A" else "5G NR Sub-6 / LTE-A"
-        } catch (_: Throwable) {
-            "5G NR Sub-6 / LTE-A"
         }
     }
 

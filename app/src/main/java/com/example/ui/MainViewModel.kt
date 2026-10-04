@@ -182,8 +182,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _isImportDialogOpen.value = false
     }
 
-    fun setRadarMasterToggle(enabled: Boolean) {
-        CellularRadarManager.setMasterToggle(enabled)
+    fun setRadarMasterToggle(context: Context, enabled: Boolean) {
+        CellularRadarManager.setMasterToggle(context, enabled)
+    }
+
+    fun refreshRadar(context: Context) {
+        CellularRadarManager.startRadar(context)
     }
 
     fun openExpertPanel() {
