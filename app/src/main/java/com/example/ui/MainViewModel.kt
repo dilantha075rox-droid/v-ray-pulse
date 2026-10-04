@@ -139,7 +139,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val downloadState = args[14] as DownloadState
         val radarData = args[15] as CellularRadarData
 
-        val server = activeConfig ?: localConfig
+        val server = localConfig ?: activeConfig
         val combinedError = when {
             vpnState is VpnState.Error -> vpnState.message
             else -> error
