@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -64,10 +63,10 @@ fun NodesScreen(
         modifier = modifier
             .fillMaxSize()
             .background(CyberBgDark)
-            .padding(horizontal = 20.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        // Top Header
+        // Top Header Row
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -76,35 +75,47 @@ fun NodesScreen(
             Column {
                 Text(
                     text = "VLESS NODES",
-                    fontSize = 20.sp,
+                    fontSize = 18.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = CyberTextPrimary,
                     letterSpacing = 1.5.sp
                 )
                 Text(
-                    text = "${uiState.allNodes.size} nodes available",
-                    fontSize = 12.sp,
+                    text = "${uiState.allNodes.size} / 10 NODES SAVED",
+                    fontSize = 11.5.sp,
                     color = CyberTextSecondary
                 )
             }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                IconButton(onClick = onPingAll) {
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                IconButton(
+                    onClick = onPingAll,
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(CyberSurfaceLight)
+                ) {
                     Icon(
                         imageVector = Icons.Default.Refresh,
                         contentDescription = "Test all pings",
-                        tint = CyberCyan
+                        tint = CyberCyan,
+                        modifier = Modifier.size(18.dp)
                     )
                 }
 
                 Button(
                     onClick = onImportClick,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = CyberCyan, contentColor = Color.Black)
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = CyberCyan, contentColor = Color.Black),
+                    modifier = Modifier.height(36.dp)
                 ) {
-                    Icon(imageVector = Icons.Default.Add, contentDescription = "Add node", modifier = Modifier.size(18.dp))
+                    Icon(imageVector = Icons.Default.Add, contentDescription = "Add node", modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text(text = "ADD NODE", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        text = if (uiState.allNodes.size >= 10) "MAX 10" else "ADD NODE",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.ExtraBold
+                    )
                 }
             }
         }
@@ -116,18 +127,21 @@ fun NodesScreen(
                     .weight(1f),
                 contentAlignment = Alignment.Center
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
                     Icon(
                         imageVector = Icons.Default.Dns,
                         contentDescription = "No nodes",
                         tint = CyberTextTertiary,
-                        modifier = Modifier.size(48.dp)
+                        modifier = Modifier.size(42.dp)
                     )
-                    Text(text = "NO SAVED NODES", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = CyberTextSecondary)
-                    Text(text = "Import a VLESS URL to add your first node.", fontSize = 12.sp, color = CyberTextTertiary)
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(text = "NO SAVED NODES", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = CyberTextSecondary)
+                    Text(text = "Import up to 10 VLESS URLs to save and switch nodes.", fontSize = 11.5.sp, color = CyberTextTertiary)
+                    Spacer(modifier = Modifier.height(6.dp))
                     OutlinedButton(onClick = onImportClick) {
-                        Text(text = "IMPORT VLESS URL", color = CyberCyan)
+                        Text(text = "IMPORT VLESS URL", color = CyberCyan, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -136,7 +150,7 @@ fun NodesScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 items(uiState.allNodes, key = { it.rawUrl }) { node ->
                     val isActive = node.rawUrl == uiState.configuredServer?.rawUrl
@@ -166,15 +180,15 @@ fun NodeCardItem(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(14.dp))
             .background(if (isActive) CyberSurfaceLight else CyberBgDeep)
             .border(
                 width = 1.dp,
                 color = if (isActive) CyberEmerald else CyberCardBorder,
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(14.dp)
             )
             .clickable(onClick = onSelect)
-            .padding(16.dp)
+            .padding(14.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -182,29 +196,29 @@ fun NodeCardItem(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     if (isActive) {
                         Icon(
                             imageVector = Icons.Default.CheckCircle,
                             contentDescription = "Active node",
                             tint = CyberEmerald,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(15.dp)
                         )
                     }
                     Text(
                         text = node.remarks.ifBlank { node.server },
-                        fontSize = 15.sp,
+                        fontSize = 14.5.sp,
                         fontWeight = FontWeight.Bold,
                         color = if (isActive) CyberEmerald else CyberTextPrimary,
                         maxLines = 1
                     )
                 }
 
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(3.dp))
 
                 Text(
-                    text = "${node.server}:${node.port} • ${node.displayTransport} • ${node.displaySecurity}",
-                    fontSize = 11.sp,
+                    text = "${node.server}:${node.port} • VLESS ${node.displaySecurity}",
+                    fontSize = 10.5.sp,
                     color = CyberTextSecondary,
                     fontFamily = FontFamily.Monospace,
                     maxLines = 1
@@ -226,7 +240,7 @@ fun NodeCardItem(
                     ) {
                         Text(
                             text = if (pingMs >= 0) "${pingMs}ms" else "TIMEOUT",
-                            fontSize = 11.sp,
+                            fontSize = 10.5.sp,
                             fontWeight = FontWeight.Bold,
                             color = pingColor,
                             fontFamily = FontFamily.Monospace
@@ -234,12 +248,12 @@ fun NodeCardItem(
                     }
                 }
 
-                IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
+                IconButton(onClick = onDelete, modifier = Modifier.size(30.dp)) {
                     Icon(
                         imageVector = Icons.Default.Delete,
                         contentDescription = "Delete node",
                         tint = CyberTextTertiary,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(16.dp)
                     )
                 }
             }

@@ -95,13 +95,26 @@ fun CellularRadarSectionCard(
                             .background(CyberSurfaceLight)
                             .padding(horizontal = 8.dp, vertical = 4.dp)
                     ) {
-                        Text(
-                            text = "LIVE HW PROBE",
-                            fontSize = 8.5.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = CyberCyan,
-                            fontFamily = FontFamily.Monospace
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            if (radarData.isMasterOn) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(6.dp)
+                                        .clip(androidx.compose.foundation.shape.CircleShape)
+                                        .background(CyberEmerald)
+                                )
+                            }
+                            Text(
+                                text = if (radarData.isMasterOn) radarData.lastRefreshedText else "OFFLINE",
+                                fontSize = 8.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (radarData.isMasterOn) CyberEmerald else CyberTextTertiary,
+                                fontFamily = FontFamily.Monospace
+                            )
+                        }
                     }
 
                     Switch(

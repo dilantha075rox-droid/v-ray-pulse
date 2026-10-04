@@ -18,6 +18,10 @@ class VlessRepository(private val context: Context) {
 
     private val keyVlessUrl = stringPreferencesKey("last_vless_url")
     private val keyNodesSet = stringSetPreferencesKey("saved_nodes_set")
+    private val keyNodesList = stringPreferencesKey("saved_nodes_list_v3")
+
+    private val DELIMITER = "\n:::\n"
+    private val MAX_NODES = 10
 
     val savedVlessConfig: Flow<VlessConfig?> = context.vlessDataStore.data.map { preferences ->
         val rawUrl = preferences[keyVlessUrl]
@@ -33,33 +37,51 @@ class VlessRepository(private val context: Context) {
     }
 
     val allNodes: Flow<List<VlessConfig>> = context.vlessDataStore.data.map { preferences ->
-        val set = preferences[keyNodesSet] ?: emptySet()
-        val list = set.mapNotNull { raw ->
+        val rawListString = preferences[keyNodesList]
+        val rawSet = preferences[keyNodesSet] ?: emptySet()
+
+        val rawUrls: List<String> = if (!rawListString.isNullOrBlank()) {
+            rawListString.split(DELIMITER).filter { it.isNotBlank() }
+        } else {
+            rawSet.toList()
+        }
+
+        val parsedList = rawUrls.mapNotNull { raw ->
             try {
                 VlessParser.parse(raw)
             } catch (_: Exception) {
                 null
             }
-        }.toMutableList()
+        }.distinctBy { it.rawUrl }.take(MAX_NODES)
 
         val activeRaw = preferences[keyVlessUrl]
-        if (!activeRaw.isNullOrBlank()) {
+        val resultList = parsedList.toMutableList()
+
+        if (!activeRaw.isNullOrBlank() && resultList.none { it.rawUrl == activeRaw.trim() }) {
             try {
                 val activeParsed = VlessParser.parse(activeRaw)
-                if (list.none { it.rawUrl == activeParsed.rawUrl }) {
-                    list.add(0, activeParsed)
-                }
+                resultList.add(0, activeParsed)
             } catch (_: Exception) {}
         }
-        list
+
+        resultList.take(MAX_NODES)
     }
 
     suspend fun saveVlessUrl(url: String) {
         val trimmed = url.trim()
         context.vlessDataStore.edit { preferences ->
             preferences[keyVlessUrl] = trimmed
-            val currentSet = preferences[keyNodesSet] ?: emptySet()
-            preferences[keyNodesSet] = currentSet + trimmed
+
+            val rawListString = preferences[keyNodesList]
+            val currentList = if (!rawListString.isNullOrBlank()) {
+                rawListString.split(DELIMITER).filter { it.isNotBlank() }
+            } else {
+                (preferences[keyNodesSet] ?: emptySet()).toList()
+            }
+
+            val updatedList = (listOf(trimmed) + currentList.filter { it != trimmed }).take(MAX_NODES)
+            preferences[keyNodesList] = updatedList.joinToString(DELIMITER)
+            preferences[keyNodesSet] = updatedList.toSet()
         }
     }
 
@@ -73,11 +95,19 @@ class VlessRepository(private val context: Context) {
     suspend fun deleteNode(url: String) {
         val trimmed = url.trim()
         context.vlessDataStore.edit { preferences ->
-            val currentSet = preferences[keyNodesSet] ?: emptySet()
-            preferences[keyNodesSet] = currentSet - trimmed
+            val rawListString = preferences[keyNodesList]
+            val currentList = if (!rawListString.isNullOrBlank()) {
+                rawListString.split(DELIMITER).filter { it.isNotBlank() }
+            } else {
+                (preferences[keyNodesSet] ?: emptySet()).toList()
+            }
+
+            val updatedList = currentList.filter { it != trimmed }
+            preferences[keyNodesList] = updatedList.joinToString(DELIMITER)
+            preferences[keyNodesSet] = updatedList.toSet()
+
             if (preferences[keyVlessUrl] == trimmed) {
-                val remaining = currentSet - trimmed
-                preferences[keyVlessUrl] = remaining.firstOrNull() ?: ""
+                preferences[keyVlessUrl] = updatedList.firstOrNull() ?: ""
             }
         }
     }
@@ -86,6 +116,7 @@ class VlessRepository(private val context: Context) {
         context.vlessDataStore.edit { preferences ->
             preferences.remove(keyVlessUrl)
             preferences.remove(keyNodesSet)
+            preferences.remove(keyNodesList)
         }
     }
 }
