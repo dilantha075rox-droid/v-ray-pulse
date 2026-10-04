@@ -38,6 +38,7 @@ data class MainUiState(
     val vpnState: VpnState = VpnState.Disconnected,
     val configuredServer: VlessConfig? = null,
     val isImportDialogOpen: Boolean = false,
+    val isExpertPanelOpen: Boolean = false,
     val errorMessage: String? = null,
     val telemetry: TelemetryData = TelemetryData(),
     val deviceInfo: DeviceInfo? = null,
@@ -54,6 +55,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = VlessRepository(application)
 
     private val _isImportDialogOpen = MutableStateFlow(false)
+    private val _isExpertPanelOpen = MutableStateFlow(false)
     private val _errorMessage = MutableStateFlow<String?>(null)
     private val _localConfig = MutableStateFlow<VlessConfig?>(null)
     private val _activeTab = MutableStateFlow(DashboardTab.PULSE)
@@ -90,6 +92,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         VpnStateManager.activeConfig,
         _localConfig,
         _isImportDialogOpen,
+        _isExpertPanelOpen,
         _errorMessage,
         TelemetryManager.telemetry,
         _deviceInfo,
@@ -106,16 +109,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         @Suppress("UNCHECKED_CAST")
         val localConfig = args[2] as VlessConfig?
         val isDialogOpen = args[3] as Boolean
-        val error = args[4] as String?
-        val telemetry = args[5] as TelemetryData
-        val deviceInfo = args[6] as DeviceInfo?
-        val activeTab = args[7] as DashboardTab
+        val isExpertOpen = args[4] as Boolean
+        val error = args[5] as String?
+        val telemetry = args[6] as TelemetryData
+        val deviceInfo = args[7] as DeviceInfo?
+        val activeTab = args[8] as DashboardTab
         @Suppress("UNCHECKED_CAST")
-        val allNodes = args[8] as List<VlessConfig>
+        val allNodes = args[9] as List<VlessConfig>
         @Suppress("UNCHECKED_CAST")
-        val nodePings = args[9] as Map<String, Long>
-        val updateStatus = args[10] as UpdateCheckResult
-        val downloadState = args[11] as DownloadState
+        val nodePings = args[10] as Map<String, Long>
+        val updateStatus = args[11] as UpdateCheckResult
+        val downloadState = args[12] as DownloadState
 
         val server = activeConfig ?: localConfig
         val combinedError = when {
@@ -127,6 +131,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             vpnState = vpnState,
             configuredServer = server,
             isImportDialogOpen = isDialogOpen,
+            isExpertPanelOpen = isExpertOpen,
             errorMessage = combinedError,
             telemetry = telemetry,
             deviceInfo = deviceInfo,
@@ -154,6 +159,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun closeImportDialog() {
         _isImportDialogOpen.value = false
+    }
+
+    fun openExpertPanel() {
+        _isExpertPanelOpen.value = true
+    }
+
+    fun closeExpertPanel() {
+        _isExpertPanelOpen.value = false
     }
 
     fun checkForUpdates() {

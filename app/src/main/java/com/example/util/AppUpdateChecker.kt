@@ -41,31 +41,34 @@ object AppUpdateChecker {
 
             if (responseCode == HttpURLConnection.HTTP_OK) {
                 val json = conn.inputStream.bufferedReader().use { it.readText() }
-                
-                // Extract tag_name, body, assets browser_download_url
-                val rawTag = Regex("\"tag_name\"\\s*:\\s*\"([^\"]+)\"").find(json)?.groupValues?.get(1) ?: "1.0"
-                val body = Regex("\"body\"\\s*:\\s*\"([^\"]+)\"").find(json)?.groupValues?.get(1) ?: "Latest release update"
+
+                val rawTag = Regex("\"tag_name\"\\s*:\\s*\"([^\"]+)\"").find(json)?.groupValues?.get(1) ?: "v1.0"
+                val rawName = Regex("\"name\"\\s*:\\s*\"([^\"]+)\"").find(json)?.groupValues?.get(1) ?: rawTag
+                val body = Regex("\"body\"\\s*:\\s*\"([^\"]+)\"").find(json)?.groupValues?.get(1) ?: "New release update available"
                 val apkDownloadUrl = Regex("\"browser_download_url\"\\s*:\\s*\"([^\"]+\\.apk)\"").find(json)?.groupValues?.get(1)
                     ?: Regex("\"html_url\"\\s*:\\s*\"([^\"]+)\"").find(json)?.groupValues?.get(1)
                     ?: repoWebUrl
 
-                // Extract numeric version numbers for comparison (e.g. "V1.1 (build demo)" -> "1.1")
-                val latestNum = Regex("(\\d+(\\.\\d+)+)").find(rawTag)?.groupValues?.get(1) ?: "1.0"
-                val currentNum = Regex("(\\d+(\\.\\d+)+)").find(currentVersion)?.groupValues?.get(1) ?: "1.0"
+                val latestNum = Regex("(\\d+(\\.\\d+)*)").find(rawName)?.groupValues?.get(1)
+                    ?: Regex("(\\d+(\\.\\d+)*)").find(rawTag)?.groupValues?.get(1)
+                    ?: "1.0"
 
-                val isNewer = compareVersions(latestNum, currentNum) > 0
+                val currentNum = Regex("(\\d+(\\.\\d+)*)").find(currentVersion)?.groupValues?.get(1) ?: "1.0"
+
+                val isNewer = compareVersions(latestNum, currentNum) > 0 || (rawTag != "v$currentVersion" && rawTag != currentVersion)
+
+                val displayTitle = if (rawName.isNotBlank() && rawName != rawTag) "$rawName ($rawTag)" else rawTag
 
                 UpdateCheckResult(
                     isChecking = false,
                     isUpToDate = !isNewer,
                     updateAvailable = isNewer,
-                    latestVersion = rawTag,
+                    latestVersion = displayTitle,
                     downloadUrl = apkDownloadUrl,
                     releaseNotes = body.take(120),
                     lastCheckedText = "Checked at $timeStr"
                 )
             } else if (responseCode == HttpURLConnection.HTTP_NOT_FOUND) {
-                // 404 happens when repository is set to Private on GitHub
                 UpdateCheckResult(
                     isChecking = false,
                     isUpToDate = false,

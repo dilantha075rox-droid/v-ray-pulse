@@ -84,7 +84,9 @@ class MainActivity : ComponentActivity() {
                         onDeleteNode = { node -> viewModel.deleteNode(node) },
                         onPingAllNodes = { viewModel.pingAllNodes() },
                         onCheckForUpdates = { viewModel.checkForUpdates() },
-                        onDownloadAndInstall = { viewModel.downloadAndInstallUpdate(this@MainActivity) }
+                        onDownloadAndInstall = { viewModel.downloadAndInstallUpdate(this@MainActivity) },
+                        onExpertClick = { viewModel.openExpertPanel() },
+                        onCloseExpertPanel = { viewModel.closeExpertPanel() }
                     )
 
                     if (uiState.isImportDialogOpen) {

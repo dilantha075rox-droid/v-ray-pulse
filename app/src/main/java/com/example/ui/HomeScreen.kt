@@ -96,7 +96,9 @@ fun HomeScreen(
     onDeleteNode: (VlessConfig) -> Unit,
     onPingAllNodes: () -> Unit,
     onCheckForUpdates: () -> Unit,
-    onDownloadAndInstall: () -> Unit
+    onDownloadAndInstall: () -> Unit,
+    onExpertClick: () -> Unit,
+    onCloseExpertPanel: () -> Unit
 ) {
     val scrollState = rememberScrollState()
     val insets = WindowInsets.systemBars.asPaddingValues()
@@ -126,6 +128,7 @@ fun HomeScreen(
                             onPingClick = onPingClick,
                             onCopyConfigClick = onCopyConfigClick,
                             onTabSelected = onTabSelected,
+                            onExpertClick = onExpertClick,
                             scrollState = scrollState
                         )
                     }
@@ -142,12 +145,7 @@ fun HomeScreen(
                         RoutingScreen()
                     }
                     DashboardTab.CUSTOM_RIG -> {
-                        CustomRigScreen(
-                            updateStatus = uiState.updateStatus,
-                            downloadState = uiState.downloadState,
-                            onCheckForUpdates = onCheckForUpdates,
-                            onDownloadAndInstall = onDownloadAndInstall
-                        )
+                        CustomRigScreen()
                     }
                 }
             }
@@ -156,6 +154,17 @@ fun HomeScreen(
             CyberBottomNavBar(
                 activeTab = uiState.activeTab,
                 onTabSelected = onTabSelected
+            )
+        }
+
+        // EXPERT PANEL DIALOG (Dedicated Expert Panel with Check For Updates)
+        if (uiState.isExpertPanelOpen) {
+            ExpertPanelDialog(
+                updateStatus = uiState.updateStatus,
+                downloadState = uiState.downloadState,
+                onDismiss = onCloseExpertPanel,
+                onCheckForUpdates = onCheckForUpdates,
+                onDownloadAndInstall = onDownloadAndInstall
             )
         }
     }
@@ -170,6 +179,7 @@ fun PulseDashboardContent(
     onPingClick: () -> Unit,
     onCopyConfigClick: () -> Unit,
     onTabSelected: (DashboardTab) -> Unit,
+    onExpertClick: () -> Unit,
     scrollState: androidx.compose.foundation.ScrollState
 ) {
     Column(
@@ -184,7 +194,7 @@ fun PulseDashboardContent(
         TopBrandingHeaderRow(
             uiState = uiState,
             onImportClick = onImportClick,
-            onExpertClick = { onTabSelected(DashboardTab.CUSTOM_RIG) }
+            onExpertClick = onExpertClick
         )
 
         // Error Banner if present
