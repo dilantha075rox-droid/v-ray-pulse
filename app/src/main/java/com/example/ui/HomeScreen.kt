@@ -18,6 +18,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -147,6 +148,14 @@ fun HomeScreen(
                     DashboardTab.CUSTOM_RIG -> {
                         CustomRigScreen()
                     }
+                    DashboardTab.EXPERT -> {
+                        ExpertScreen(
+                            updateStatus = uiState.updateStatus,
+                            downloadState = uiState.downloadState,
+                            onCheckForUpdates = onCheckForUpdates,
+                            onDownloadAndInstall = onDownloadAndInstall
+                        )
+                    }
                 }
             }
 
@@ -154,17 +163,6 @@ fun HomeScreen(
             CyberBottomNavBar(
                 activeTab = uiState.activeTab,
                 onTabSelected = onTabSelected
-            )
-        }
-
-        // EXPERT PANEL DIALOG (Dedicated Expert Panel with Check For Updates)
-        if (uiState.isExpertPanelOpen) {
-            ExpertPanelDialog(
-                updateStatus = uiState.updateStatus,
-                downloadState = uiState.downloadState,
-                onDismiss = onCloseExpertPanel,
-                onCheckForUpdates = onCheckForUpdates,
-                onDownloadAndInstall = onDownloadAndInstall
             )
         }
     }
@@ -309,13 +307,18 @@ fun TopBrandingHeaderRow(
                 }
 
                 // Compact "EXPERT" Button
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(50))
-                        .background(CyberSurfaceLight)
-                        .border(1.dp, CyberCyanDim, RoundedCornerShape(50))
-                        .clickable(onClick = onExpertClick)
-                        .padding(horizontal = 8.dp, vertical = 5.dp)
+                OutlinedButton(
+                    onClick = onExpertClick,
+                    modifier = Modifier.height(32.dp),
+                    shape = RoundedCornerShape(50),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+                    border = ButtonDefaults.outlinedButtonBorder.copy(
+                        brush = androidx.compose.ui.graphics.SolidColor(CyberCyanDim)
+                    ),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = CyberSurfaceLight,
+                        contentColor = CyberCyan
+                    )
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,

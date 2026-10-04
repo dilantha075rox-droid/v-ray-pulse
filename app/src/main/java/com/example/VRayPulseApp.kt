@@ -12,7 +12,8 @@ class VRayPulseApp : Application() {
         try {
             Seq.setContext(this)
             Libv2ray.initCoreEnv(filesDir.absolutePath, "")
-            Log.i("VRayPulseApp", "VRayPulseApp initialized with Xray runtime")
+            com.example.optimization.OptimizationManager.init(this)
+            Log.i("VRayPulseApp", "VRayPulseApp initialized with Xray runtime and Optimization Manager")
         } catch (e: Exception) {
             Log.e("VRayPulseApp", "Failed to initialize Xray runtime context", e)
         }

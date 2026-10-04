@@ -31,7 +31,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 enum class DashboardTab {
-    PULSE, NODES, ROUTING, CUSTOM_RIG
+    PULSE, NODES, ROUTING, CUSTOM_RIG, EXPERT
 }
 
 data class MainUiState(

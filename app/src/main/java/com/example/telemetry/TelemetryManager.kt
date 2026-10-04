@@ -3,6 +3,7 @@ package com.example.telemetry
 import android.net.TrafficStats
 import android.os.Process
 import com.example.model.TelemetryData
+import com.example.optimization.OptimizationManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -44,7 +45,6 @@ object TelemetryManager {
 
         telemetryJob?.cancel()
         telemetryJob = scope.launch {
-            // Initial ping measurement
             if (!host.isNullOrBlank()) {
                 measureServerPing(host, port)
             }
@@ -52,7 +52,12 @@ object TelemetryManager {
             var pingTick = 0
 
             while (isActive) {
-                delay(1000)
+                val delayMs = OptimizationManager.getRefreshIntervalMs()
+                delay(delayMs)
+
+                if (OptimizationManager.shouldPauseUiSampling()) {
+                    continue
+                }
 
                 val currentTime = System.currentTimeMillis()
                 val deltaSec = ((currentTime - lastTimestamp) / 1000.0).coerceAtLeast(0.1)
@@ -85,7 +90,6 @@ object TelemetryManager {
                 lastTxBytes = currentTx
                 lastTimestamp = currentTime
 
-                // Measure ping every 10 seconds
                 pingTick++
                 if (pingTick >= 10 && !host.isNullOrBlank()) {
                     pingTick = 0

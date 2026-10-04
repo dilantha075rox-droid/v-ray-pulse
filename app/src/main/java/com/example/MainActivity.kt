@@ -28,6 +28,16 @@ class MainActivity : ComponentActivity() {
 
     private val viewModel: MainViewModel by viewModels()
 
+    override fun onStart() {
+        super.onStart()
+        com.example.optimization.OptimizationManager.setAppForegroundState(true)
+    }
+
+    override fun onStop() {
+        super.onStop()
+        com.example.optimization.OptimizationManager.setAppForegroundState(false)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -85,7 +95,7 @@ class MainActivity : ComponentActivity() {
                         onPingAllNodes = { viewModel.pingAllNodes() },
                         onCheckForUpdates = { viewModel.checkForUpdates() },
                         onDownloadAndInstall = { viewModel.downloadAndInstallUpdate(this@MainActivity) },
-                        onExpertClick = { viewModel.openExpertPanel() },
+                        onExpertClick = { viewModel.selectTab(com.example.ui.DashboardTab.EXPERT) },
                         onCloseExpertPanel = { viewModel.closeExpertPanel() }
                     )
 
