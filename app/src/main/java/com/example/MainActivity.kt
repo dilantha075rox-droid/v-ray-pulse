@@ -90,6 +90,8 @@ class MainActivity : ComponentActivity() {
                         onTabSelected = { tab -> viewModel.selectTab(tab) },
                         onPingClick = { viewModel.pingCurrentServer() },
                         onCopyConfigClick = { viewModel.copyConfigToClipboard(this@MainActivity) },
+                        onDetailsClick = { viewModel.openServerDetails() },
+                        onCloseDetailsDialog = { viewModel.closeServerDetails() },
                         onSelectNode = { node -> viewModel.selectNode(node) },
                         onDeleteNode = { node -> viewModel.deleteNode(node) },
                         onPingAllNodes = { viewModel.pingAllNodes() },

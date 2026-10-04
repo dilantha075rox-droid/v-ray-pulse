@@ -40,6 +40,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.icons.filled.SwapHoriz
@@ -93,6 +94,8 @@ fun HomeScreen(
     onTabSelected: (DashboardTab) -> Unit,
     onPingClick: () -> Unit,
     onCopyConfigClick: () -> Unit,
+    onDetailsClick: () -> Unit,
+    onCloseDetailsDialog: () -> Unit,
     onSelectNode: (VlessConfig) -> Unit,
     onDeleteNode: (VlessConfig) -> Unit,
     onPingAllNodes: () -> Unit,
@@ -128,6 +131,7 @@ fun HomeScreen(
                             onDismissError = onDismissError,
                             onPingClick = onPingClick,
                             onCopyConfigClick = onCopyConfigClick,
+                            onDetailsClick = onDetailsClick,
                             onTabSelected = onTabSelected,
                             onExpertClick = onExpertClick,
                             scrollState = scrollState
@@ -165,6 +169,15 @@ fun HomeScreen(
                 onTabSelected = onTabSelected
             )
         }
+
+        // SERVER DETAILS DIALOG
+        if (uiState.isDetailsDialogOpen) {
+            ServerDetailsDialog(
+                server = uiState.configuredServer,
+                details = uiState.serverDetails,
+                onDismiss = onCloseDetailsDialog
+            )
+        }
     }
 }
 
@@ -176,6 +189,7 @@ fun PulseDashboardContent(
     onDismissError: () -> Unit,
     onPingClick: () -> Unit,
     onCopyConfigClick: () -> Unit,
+    onDetailsClick: () -> Unit,
     onTabSelected: (DashboardTab) -> Unit,
     onExpertClick: () -> Unit,
     scrollState: androidx.compose.foundation.ScrollState
@@ -238,6 +252,7 @@ fun PulseDashboardContent(
             onSwitchServerClick = { onTabSelected(DashboardTab.NODES) },
             onPingClick = onPingClick,
             onCopyClick = onCopyConfigClick,
+            onDetailsClick = onDetailsClick,
             onImportClick = onImportClick
         )
 
@@ -585,6 +600,7 @@ fun FuturisticServerCard(
     onSwitchServerClick: () -> Unit,
     onPingClick: () -> Unit,
     onCopyClick: () -> Unit,
+    onDetailsClick: () -> Unit,
     onImportClick: () -> Unit
 ) {
     val isConnected = vpnState is VpnState.Connected
@@ -703,10 +719,10 @@ fun FuturisticServerCard(
                     fontFamily = FontFamily.Monospace
                 )
 
-                // Action Buttons Row (Switch Server, Ping, Copy)
+                // Action Buttons Row (Switch Server, Ping, Copy, Details)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     OutlinedButton(
@@ -763,6 +779,23 @@ fun FuturisticServerCard(
                             imageVector = Icons.Default.ContentCopy,
                             contentDescription = "Copy Config URL",
                             tint = CyberTextSecondary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+
+                    // Details button
+                    IconButton(
+                        onClick = onDetailsClick,
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(CyberSurfaceLight)
+                            .border(1.dp, CyberCyan.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Info,
+                            contentDescription = "Server Details",
+                            tint = CyberCyan,
                             modifier = Modifier.size(16.dp)
                         )
                     }

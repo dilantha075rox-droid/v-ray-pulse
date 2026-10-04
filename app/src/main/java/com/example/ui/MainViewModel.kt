@@ -22,6 +22,8 @@ import com.example.util.AppUpdateDownloader
 import com.example.util.DeviceInfo
 import com.example.util.DeviceInfoHelper
 import com.example.util.DownloadState
+import com.example.util.ServerDetailsData
+import com.example.util.ServerDetailsHelper
 import com.example.util.UpdateCheckResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -39,6 +41,8 @@ data class MainUiState(
     val configuredServer: VlessConfig? = null,
     val isImportDialogOpen: Boolean = false,
     val isExpertPanelOpen: Boolean = false,
+    val isDetailsDialogOpen: Boolean = false,
+    val serverDetails: ServerDetailsData = ServerDetailsData(),
     val errorMessage: String? = null,
     val telemetry: TelemetryData = TelemetryData(),
     val deviceInfo: DeviceInfo? = null,
@@ -56,6 +60,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _isImportDialogOpen = MutableStateFlow(false)
     private val _isExpertPanelOpen = MutableStateFlow(false)
+    private val _isDetailsDialogOpen = MutableStateFlow(false)
+    private val _serverDetails = MutableStateFlow(ServerDetailsData())
     private val _errorMessage = MutableStateFlow<String?>(null)
     private val _localConfig = MutableStateFlow<VlessConfig?>(null)
     private val _activeTab = MutableStateFlow(DashboardTab.PULSE)
@@ -93,6 +99,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _localConfig,
         _isImportDialogOpen,
         _isExpertPanelOpen,
+        _isDetailsDialogOpen,
+        _serverDetails,
         _errorMessage,
         TelemetryManager.telemetry,
         _deviceInfo,
@@ -110,16 +118,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val localConfig = args[2] as VlessConfig?
         val isDialogOpen = args[3] as Boolean
         val isExpertOpen = args[4] as Boolean
-        val error = args[5] as String?
-        val telemetry = args[6] as TelemetryData
-        val deviceInfo = args[7] as DeviceInfo?
-        val activeTab = args[8] as DashboardTab
+        val isDetailsOpen = args[5] as Boolean
+        val serverDetails = args[6] as ServerDetailsData
+        val error = args[7] as String?
+        val telemetry = args[8] as TelemetryData
+        val deviceInfo = args[9] as DeviceInfo?
+        val activeTab = args[10] as DashboardTab
         @Suppress("UNCHECKED_CAST")
-        val allNodes = args[9] as List<VlessConfig>
+        val allNodes = args[11] as List<VlessConfig>
         @Suppress("UNCHECKED_CAST")
-        val nodePings = args[10] as Map<String, Long>
-        val updateStatus = args[11] as UpdateCheckResult
-        val downloadState = args[12] as DownloadState
+        val nodePings = args[12] as Map<String, Long>
+        val updateStatus = args[13] as UpdateCheckResult
+        val downloadState = args[14] as DownloadState
 
         val server = activeConfig ?: localConfig
         val combinedError = when {
@@ -132,6 +142,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             configuredServer = server,
             isImportDialogOpen = isDialogOpen,
             isExpertPanelOpen = isExpertOpen,
+            isDetailsDialogOpen = isDetailsOpen,
+            serverDetails = serverDetails,
             errorMessage = combinedError,
             telemetry = telemetry,
             deviceInfo = deviceInfo,
@@ -167,6 +179,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun closeExpertPanel() {
         _isExpertPanelOpen.value = false
+    }
+
+    fun openServerDetails() {
+        val server = uiState.value.configuredServer ?: return
+        _isDetailsDialogOpen.value = true
+        _serverDetails.value = ServerDetailsData(host = server.server, isLoading = true)
+
+        viewModelScope.launch {
+            val details = ServerDetailsHelper.fetchDetails(server.server)
+            _serverDetails.value = details
+        }
+    }
+
+    fun closeServerDetails() {
+        _isDetailsDialogOpen.value = false
     }
 
     fun checkForUpdates() {
